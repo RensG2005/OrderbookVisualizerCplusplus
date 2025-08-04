@@ -80,7 +80,7 @@ public:
         std::lock_guard<std::mutex> lock(book_mutex);
         std::vector<OrderBookLevel> result;
         
-        auto it = bids.rbegin(); // Start from highest price
+        auto it = bids.rbegin();
         for (int i = 0; i < depth && it != bids.rend(); ++i, ++it) {
             result.push_back(it->second);
         }
@@ -117,7 +117,7 @@ public:
         double bid = getBestBid();
         double ask = getBestAsk();
         if (bid > 0 && ask > 0) {
-            return ((ask - bid) / ((ask + bid) / 2.0)) * 10000.0; // basis points
+            return ((ask - bid) / ((ask + bid) / 2.0)) * 10000.0;
         }
         return 0.0;
     }
@@ -208,8 +208,8 @@ public:
         
         printHeader();
         
-        std::vector<OrderBookLevel> bids = book.getBids(15);
-        std::vector<OrderBookLevel> asks = book.getAsks(15);
+        std::vector<OrderBookLevel> bids = book.getBids(10);
+        std::vector<OrderBookLevel> asks = book.getAsks(10);
 
         double max_bid_qty = 0.0;
         double max_ask_qty = 0.0;
@@ -224,7 +224,7 @@ public:
         double max_qty = std::max(max_bid_qty, max_ask_qty);
         int bar_width = std::min(40, terminal_width / 3);
         
-        std::cout << "\033[31m"; // Red color for asks
+        std::cout << "\033[31m";
         std::cout << "ASKS (Sellers) - " << asks.size() << " levels\n";
         std::cout << "════════════════════════════════════════════════════════════════════════════\n";
         std::cout << std::setw(12) << "Price ($)" << " │ " << std::setw(15) << "Quantity" << " │ " << "Liquidity\n";
@@ -234,54 +234,47 @@ public:
             const auto& ask = asks[i];
             std::string bar = createBar(ask.quantity, max_qty, bar_width, 'X');
             
-            std::cout << "$" << std::fixed << std::setprecision(2) << std::setw(10) << ask.price 
-                      << " │ " << std::setw(15) << std::setprecision(8) << ask.quantity 
-                      << " │ " << bar << "\n";
+            std::cout << "$" << std::fixed << std::setprecision(3) << std::setw(10) << ask.price 
+            << " │ " << std::setw(15) << std::setprecision(2) << ask.quantity 
+            << " │ " << bar << "\n";
         }
         
-        std::cout << "\033[0m"; // Reset color
+        std::cout << "\033[0m";
         
-        std::cout << "\n";
         std::cout << "                          ── SPREAD: $" << std::fixed << std::setprecision(2) 
-                  << book.getSpread() << " (" << std::setprecision(1) << book.getSpreadBps() << " bps) ──\n\n";
-        
-        std::cout << "\033[32m"; // Green color for bids
-        std::cout << "BIDS (Buyers) - " << bids.size() << " levels\n";
-        std::cout << "════════════════════════════════════════════════════════════════════════════\n";
-        std::cout << std::setw(12) << "Price ($)" << " │ " << std::setw(15) << "Quantity" << " │ " << "Liquidity\n";
-        std::cout << "─────────────┼─────────────────┼────────────────────────────────────────────\n";
-        
+                  << book.getSpread() << " (" << std::setprecision(1) << book.getSpreadBps() << " bps) ──\n";
+
+
+        std::cout << "\033[32m";
         for (const auto& bid : bids) {
             std::string bar = createBar(bid.quantity, max_qty, bar_width, 'X');
             
-            std::cout << "$" << std::fixed << std::setprecision(2) << std::setw(10) << bid.price 
-                      << " │ " << std::setw(15) << std::setprecision(8) << bid.quantity 
-                      << " │ " << bar << "\n";
+            std::cout << "$" << std::fixed << std::setprecision(3) << std::setw(10) << bid.price 
+            << " │ " << std::setw(15) << std::setprecision(2) << bid.quantity 
+            << " │ " << bar << "\n";
         }
-        
-        std::cout << "\033[0m"; // Reset color
-        
-        std::cout << "\n";
-        std::cout << "Market Statistics:\n";
+
+
         
         double total_bid_volume = 0.0;
-        double total_ask_volume = 0.0;
         double total_bid_value = 0.0;
+        double total_ask_volume = 0.0;
         double total_ask_value = 0.0;
         
-        for (const auto& bid : bids) {
-            total_bid_volume += bid.quantity;
-            total_bid_value += bid.quantity * bid.price;
-        }
         for (const auto& ask : asks) {
             total_ask_volume += ask.quantity;
             total_ask_value += ask.quantity * ask.price;
         }
+        for (const auto& bid : bids) {
+            total_bid_volume += bid.quantity;
+            total_bid_value += bid.quantity * bid.price;
+        }
         
-        std::cout << "Bid Volume (top 15): " << std::fixed << std::setprecision(4) << total_bid_volume << " " << symbol.substr(0, 3) << "\n";
-        std::cout << "Ask Volume (top 15): " << std::setprecision(4) << total_ask_volume << " " << symbol.substr(0, 3) << "\n";
-        std::cout << "Bid Value (top 15): $" << std::setprecision(2) << total_bid_value << "\n";
+        std::cout << "\033[0m";
+        std::cout << "\n" << "Ask Volume (top 15): " << std::setprecision(2) << total_ask_volume << " " << symbol.substr(0, 3) << "\n";
         std::cout << "Ask Value (top 15): $" << std::setprecision(2) << total_ask_value << "\n";
+        std::cout << "Bid Volume (top 15): " << std::fixed << std::setprecision(2) << total_bid_volume << " " << symbol.substr(0, 3) << "\n";
+        std::cout << "Bid Value (top 15): $" << std::setprecision(2) << total_bid_value << "\n";
         
         std::cout << "\nPress Ctrl+C to exit...\n";
     }
@@ -438,7 +431,7 @@ int main(int argc, char** argv) {
         
         ws_client.connect();
         
-        std::this_thread::sleep_for(std::chrono::seconds(3));
+        // std::this_thread::sleep_for(std::chrono::seconds(3));
         
         auto last_update = std::chrono::steady_clock::now();
         const auto update_interval = std::chrono::milliseconds(1000);

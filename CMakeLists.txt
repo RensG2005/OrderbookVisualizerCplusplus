@@ -9,7 +9,7 @@ find_package(OpenSSL REQUIRED)
 
 find_package(nlohmann_json CONFIG REQUIRED)
 
-add_executable(main main.cpp)
+add_executable(main src/main.cpp src/OrderBook.cpp src/Visualizer.cpp src/WebSocketClient.cpp)
 
 target_link_libraries(main PRIVATE
     Boost::system 
